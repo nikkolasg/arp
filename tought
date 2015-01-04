@@ -1,0 +1,13 @@
+receive an ARP request with 
+    ETHER => sender = mac of victim , 
+            dest = FF:FF:FF:FF:FF:FF
+    hardware sender : mac of victim
+    protocol sender : ip of victim
+    hardware destination : FF:FF:FF:FF:FF:FF
+    protocol destination : ip of router !
+    
+-> reply with ARP REPLY :
+    hardware sender : Atacker MAC
+    protocol sender : router's ip !
+    hardware destination : mac of victim
+    protocol destination : ip of victim !

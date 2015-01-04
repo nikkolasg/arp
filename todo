@@ -1,0 +1,3 @@
+    -for now checking is basic, implement checking braodcast address 
+    -arp one way only, router still sends results back directly to victim
+and not to us !!

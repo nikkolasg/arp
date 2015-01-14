@@ -126,10 +126,10 @@ int activate(pcap_t * handle) {
 		case PCAP_ERROR_PERM_DENIED:
 		       fprintf(stderr,"Not have the permission required\n");
 		       return ret;
-		case PCAP_ERROR_PROMISC_PERM_DENIED:
+	/*	case PCAP_ERROR_PROMISC_PERM_DENIED:
 		       fprintf(stderr,"Not have the permission required for promiscuous\n");
 		       return ret;
-		default:
+		*/default:
 		       fprintf(stderr,"Error occured during activation, see code\n");
 		       return ret;
 	}

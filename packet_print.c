@@ -4,6 +4,13 @@
 #include <string.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+
+void print_mac_addr(const u_char * bytes) {
+    int i = 0;
+    for(i =0; i < ETH_ADDR_SIZE;i++) {
+        fprintf(stdout,"%02X:",toupper(bytes[i]));
+    }
+}
 void print_pkt_eth(const pkt_eth * eth) {
 	int i = 0;
 	

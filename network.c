@@ -26,6 +26,8 @@
 #include <stdio.h>
 #include <arpa/inet.h>
 
+
+
 /*
  * Return a UDP socket 
  * */
@@ -109,7 +111,7 @@ get_ip_address ( const char * interface)
 /*
  * Copy the mac address of the interface into the buffer chMAC
  * */
-int getMACAddress(  char * interface,unsigned char chMAC[6]) {
+int get_mac_addr(  char * interface,unsigned char chMAC[6]) {
     
     struct ifreq ifr;
     

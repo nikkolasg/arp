@@ -50,7 +50,6 @@ get_ifreq ( const char * interface )
 
     struct ifreq ifr;
     size_t if_len;
-    struct in_addr ipaddr; /** receptacle for the ip */
 
 
     if_len = strlen(interface);
@@ -123,6 +122,7 @@ int get_mac_addr(  char * interface,unsigned char chMAC[6]) {
     strcpy( ifr.ifr_name, ifname );
     ifr.ifr_addr.sa_family = AF_INET;
     if (ioctl( sock, SIOCGIFHWADDR, &ifr ) < 0) {
+        fprintf(stderr,"Error while ioctl MAC address\n");
         return -1;
     }
     memcpy(chMAC, ifr.ifr_hwaddr.sa_data, 6);

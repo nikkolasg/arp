@@ -17,7 +17,7 @@ void print_pkt_eth(const pkt_eth * eth) {
 	fprintf(stdout,"Ethernet Layer \n");
 	fprintf(stdout,"\tSource:\t");
     for(i=0;i<ETH_ADDR_SIZE;i++)
-        fprintf(stdout,"%02X:",toupper(eth->src[i]));
+        fprintf(stdout,"%02X:",eth->src[i]);
     //fprintf(stdout,"%s",to_addr(eth->src,ETH_ADDR_SIZE));
 	fprintf(stdout,"\n\tDest:\t"); 
 	for(i=0;i<ETH_ADDR_SIZE;i++)

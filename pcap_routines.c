@@ -27,7 +27,7 @@
 #define MAX_PKT_NUMBER 5
 
 static pcap_t * handle;
-static packet_count = 0;
+static int packet_count = 0;
 /*
  * signal handler for nicely release the pcap handle
  * */
@@ -81,9 +81,9 @@ void sniff_callback(u_char * user, const struct  pcap_pkthdr * h,const u_char * 
     eth_type = ntohs(eth->type);
 
     if(eth_type == ETHERTYPE_ARP) {
-        handle_arp(h,bytes);
+        handle_arp(bytes);
     } else if (eth_type == ETHERTYPE_IP) {
-        handle_ip(h,bytes);
+        handle_ip(bytes);
     }
     
     printf("\n");for(i=0; i < 25; i++) { printf("-"); }; printf("\n\n");
@@ -198,7 +198,7 @@ int sniffing_method(char * interface, char * filter,int packet_count) {
     return EXIT_SUCCESS;
 }
 
-void handle_ip(const struct pcap_pkthdr *h,const u_char * bytes) {
+void handle_ip(const u_char * bytes) {
     const struct pkt_ip * ip = (const struct pkt_ip *) (bytes + ETH_SIZE);
     print_pkt_ip(ip);
 }

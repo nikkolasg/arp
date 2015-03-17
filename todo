@@ -1,3 +1,47 @@
     -for now checking is basic, implement checking braodcast address 
     -arp one way only, router still sends results back directly to victim
 and not to us !!
+
+--> working with bridge ;)
+--> Switch : either flood switch arp table,
+             or MitM attack. (better ;)
+
+tool design == ?
+    -> Goal of arp spoofing attacks : sniff & intercept traffic (with/out modification)
+    -> scenarios : 
+            -> sniff host on network : flood switch or MitM attack on host and router
+            -> intercept traffic :MitM on host and router / other .
+                                 if redirection == sniffing + modification
+                                   Else : Dos ;) network unusable by host
+
+
+    ==> methods :
+        -arp_flooding : will flood the network (though the switch, mostly)
+                        until switch arp's table is filled and it goes
+                        "broadcast" mode, then we can sniff.
+                        flood for example all MAC address are its own.
+                        ->frequency : fast, like 1 sec
+        -arp_mitm: host A & B. will flood A & B with spoofed arp packets
+                        -> frequency : fast at first, for 10 packets let's say, then at 30 sec intervals
+
+
+    ==> flow :
+        - initialisation (options, pcap init etc)
+        - flooding/spoofing
+
+
+
+organisation :
+    main -> main launcher + options parsing
+    flood -> flood operation. 
+    mitm -> mitm attack
+    network + gateway -> network miscellaneous routines
+    pcap -> pcap routines
+    arp necessary ? No
+    packet_print / struct -> you know.
+
+    ::::::::::::::::::::::::::
+    pcap routines must accept function pointers to call in certain cases or in all cases i.e. set_ip_callback, set_arp_callback, or set_pkt_callback 
+    MAJOR CHANGES : no need to LISTEN packets. Only injecting will be done. sniffing can be done much better with wireshark.
+
+

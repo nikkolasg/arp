@@ -27,6 +27,6 @@ int set_options(pcap_t * handle);
 int activate(pcap_t * handle) ;
 int sniffing_method(char * interface, char * filter,int packet_count) ;
 
-void handle_ip(const struct pcap_pkthdr *h,const u_char * bytes);
+void handle_ip(const u_char * bytes);
 
 #endif

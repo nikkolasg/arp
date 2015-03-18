@@ -155,15 +155,16 @@ main ( int argc, char *argv[] )
         fprintf(stderr,"No interface given. Abort.\n");
         exit(EXIT_FAILURE);
     } 
-
-    /* Store our own mac address */
-    if (get_mac_address(interface,&mac) == -1) {
-        fprintf(stderr,"Abort.\n");
-        exit(EXIT_FAILURE);
-    }
+    
     /* Store our own ip address */
     if(get_ip_address(interface,&ip) == -1) {
         fprintf(stderr,"Could not get IP address.Abort.\n");
+        exit(EXIT_FAILURE);
+    }
+    
+    /* Store our own mac address */
+    if (get_mac_address(interface,&mac) == -1) {
+        fprintf(stderr,"Abort.\n");
         exit(EXIT_FAILURE);
     }
 
@@ -175,8 +176,8 @@ main ( int argc, char *argv[] )
     printf("Arguments are :");
     printf("\n\tMethod : %s",operation);
     printf("\n\tInterface : %s",interface);
-    if(latency != 0) printf("\n\tLatency : %d",latency);
-    if(frequency != 0) printf("\n\tFrequency : %d",frequency);
+    if(latency != 0) printf("\n\tLatency : %d sec",latency);
+    if(frequency != 0) printf("\n\tFrequency : %d ms",frequency);
     printf("\nInterface infos :");
     printf("\n\tMAC : %s",ether_ntoa(&mac));
     printf("\n\tIP : %s\n",inet_ntoa(ip)); 

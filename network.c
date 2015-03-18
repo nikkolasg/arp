@@ -98,7 +98,7 @@ get_ip_address ( const char * interface,struct in_addr * addr)
 
     if(ioctl(fd, SIOCGIFADDR, &ifr) == -1) {
         fprintf(stderr,"%s\n",strerror(errno));
-        fprintf(stderr,"Error while operating IOCTL(IP Resolving).\n");
+        fprintf(stderr,"\nError while operating IOCTL (%s).\n",interface);
         close(fd);
         return -1;
     }
@@ -134,7 +134,27 @@ int get_mac_address_old(  char * interface,unsigned char chMAC[6]) {
 
 }
 
+void print_ioctl_error(void) {
+    switch(errno) {
+        case EBADF:
+            printf("Not a valid descriptor.");
+            break;
+        case EFAULT:
+            printf("Argp is referencing inacessible memory area.");
+            break;
+        case EINVAL:
+            printf("Request or argp is not valid.");
+            break;
+        case ENOTTY:
+            printf("Request not available on this device.");
+            break;
+        default:
+            printf("%s",strerror(errno));
+            break;
+    }
+    fflush(stdout);
 
+}
 /*-----------------------------------------------------------------------------
  *  Gateway part : fetch the default gateway associated with the network
  *  Code taken from : http://www.linuxquestions.org/questions/linux-networking-3/howto-find-gateway-address-through-code-397078/

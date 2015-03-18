@@ -40,7 +40,7 @@ struct ifreq get_ifreq(const char * interface);
 int get_mac_address(const char * interface,struct ether_addr * ether);
 int get_mac_address_old(char * interface,unsigned char mac[6]);
 int get_ip_address(const char * interface,struct in_addr * addr);
-
+void print_ioctl_error(void);
 
 /* Code from internet. See implementation for details */
 struct route_info

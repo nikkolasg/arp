@@ -26,6 +26,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <arpa/inet.h>
+#include <string.h>
 
 #include "network.h"
 /*
@@ -73,8 +74,9 @@ get_mac_address(const char * interface, struct ether_addr * ether) {
     };
     
     if(ioctl(fd,SIOCGIFHWADDR,&ifr) == -1) {
+        fprintf(stderr,"Error while operating IOCTL (MAC resolving).\n");
+        fprintf(stderr,"%s\n",strerror(fd));
         close(fd);
-        fprintf(stderr,"Error while operating IOCTL (MAC resolving).");
         return -1;
     } 
     close(fd);

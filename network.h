@@ -25,7 +25,8 @@
 
 #include <unistd.h>
 #include <arpa/inet.h>
-
+#include <netinet/in.h>
+#include <netinet/ether.h>
 
 #define BROADCAST_MAC "ff:ff:ff:ff:ff:ff"
 #define NULL_MAC "00:00:00:00:00:00"

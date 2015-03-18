@@ -74,8 +74,8 @@ get_mac_address(const char * interface, struct ether_addr * ether) {
     };
     
     if(ioctl(fd,SIOCGIFHWADDR,&ifr) == -1) {
-        fprintf(stderr,"Error while operating IOCTL (MAC resolving).\n");
         fprintf(stderr,"%s\n",strerror(fd));
+        fprintf(stderr,"Error while operating IOCTL (MAC resolving).\n");
         close(fd);
         return -1;
     } 
@@ -97,8 +97,9 @@ get_ip_address ( const char * interface,struct in_addr * addr)
     fd = get_socketudp();
 
     if(ioctl(fd, SIOCGIFADDR, &ifr) == -1) {
+        fprintf(stderr,"%s\n",strerror(errno));
+        fprintf(stderr,"Error while operating IOCTL(IP Resolving).\n");
         close(fd);
-        fprintf(stderr,"Error while operating IOCTL.\n");
         return -1;
     }
     ipaddr = (struct sockaddr_in *) &ifr.ifr_addr;

@@ -134,7 +134,7 @@ int get_gatewayip(char *gatewayip, socklen_t size)
     int found_gatewayip = 0;
 
     struct nlmsghdr *nlMsg;
-    struct rtmsg *rtMsg;
+    //struct rtmsg *rtMsg;
     struct route_info route_info;
     char msgBuf[BUFSIZE]; // pretty large buffer
 
@@ -152,7 +152,7 @@ int get_gatewayip(char *gatewayip, socklen_t size)
 
     /* point the header and the msg structure pointers into the buffer */
     nlMsg = (struct nlmsghdr *)msgBuf;
-    rtMsg = (struct rtmsg *)NLMSG_DATA(nlMsg);
+    //rtMsg = (struct rtmsg *)NLMSG_DATA(nlMsg);
 
     /* Fill in the nlmsg header*/
     nlMsg->nlmsg_len = NLMSG_LENGTH(sizeof(struct rtmsg)); // Length of message.

@@ -1,12 +1,12 @@
 /*
  * =====================================================================================
  *
- *       Filename:  packet_print.h
+ *       Filename:  utils.c
  *
- *    Description:  
+ *    Description:  some utils method
  *
  *        Version:  1.0
- *        Created:  12/27/2014 05:42:35 PM
+ *        Created:  03/18/2015 11:25:46 AM
  *       Revision:  none
  *       Compiler:  gcc
  *
@@ -16,12 +16,7 @@
  * =====================================================================================
  */
 
-#ifndef PACKET_PRINT_
-#define PACKET_PRINT_
 
-void print_pkt_eth(const pkt_eth * eth);
-void print_pkt_arp(const pkt_arp * arp);
-void print_pkt_ip(const pkt_ip * ip);
-void print_mac_addr(const u_char * bytes);
-
-#endif
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>

@@ -1,9 +1,12 @@
-#include "packet_struct.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+
+
+#include "packet_struct.h"
+#include "packet_print.h"
 
 void print_mac_addr(const u_char * bytes) {
     int i = 0;

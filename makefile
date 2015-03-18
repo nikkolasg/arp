@@ -1,8 +1,4 @@
 all:
-	gcc -lpcap  own_sniff.c packet_print.c pcap_routines.c network.c arp.c -o sniff
+	gcc -Wextra -Wmissing-prototypes -Wstrict-prototypes -lpcap main.c  arp.c packet_print.c pcap_routines.c network.c -o parp
 
-debug:
-	gcc -lpcap -g  own_sniff.c packet_print.c pcap_routines.c network.c arp.c -o sniff
-training:
-	gcc -lpcap network.c test.c -o test
 

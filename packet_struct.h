@@ -3,6 +3,7 @@
 
 #include <sys/types.h>
 #include <netinet/in.h>
+#include <netinet/ether.h>
 #define BUFF_SIZE 1518
 #define ETH_SIZE 14
 #define ARP_SIZE 28
@@ -11,9 +12,15 @@
 #define ETH_ADDR_SIZE 6
 #define IP_ADDR_SIZE 4
 
+
+typedef u_char Packet;
+typedef struct in_addr IP;
+typedef struct ether_addr MAC;
+typedef u_char Address;
+
 typedef struct pkt_eth {
-	u_char dest[ETH_ADDR_SIZE];
-	u_char src[ETH_ADDR_SIZE];
+	Address dest[ETH_ADDR_SIZE];
+	Address src[ETH_ADDR_SIZE];
 	u_short type;
 } pkt_eth;
 
@@ -26,10 +33,10 @@ typedef struct pkt_arp {
 	u_char hard_addr_len; /* usually 6 bytes for ethernet */
 	u_char proto_addr_len; /*usually 8 bytes for ipv4 */
     u_short opcode; /* type of arp */
-	u_char hard_addr_send[ETH_ADDR_SIZE];
-	u_char proto_addr_send[IP_ADDR_SIZE];
-	u_char hard_addr_dest[ETH_ADDR_SIZE];
-    u_char proto_addr_dest[IP_ADDR_SIZE];
+	Address hard_addr_send[ETH_ADDR_SIZE];
+	Address proto_addr_send[IP_ADDR_SIZE];
+	Address hard_addr_dest[ETH_ADDR_SIZE];
+    Address proto_addr_dest[IP_ADDR_SIZE];
 } pkt_arp;
 
 #define ETHERTYPE_IP 0x0800
@@ -42,8 +49,8 @@ typedef struct pkt_ip {
 	u_char ttl;
 	u_char proto;
 	u_short crc;
-    u_char addr_src[IP_ADDR_SIZE];
-    u_char addr_dest[IP_ADDR_SIZE];
+    Address addr_src[IP_ADDR_SIZE];
+    Address addr_dest[IP_ADDR_SIZE];
 } pkt_ip;
 
 #endif

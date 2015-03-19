@@ -1,8 +1,8 @@
-#include<stdio.h>
-#include<stdlib.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <time.h>
-#include<netinet/in.h> // for addresses translation
-#include<errno.h>
+#include <netinet/in.h> // for addresses translation
+#include <errno.h>
 #include <signal.h> // for signal control handling in posix env
 // for ntohs etc
 // can also be necessary to include netinet/in
@@ -100,7 +100,6 @@ main ( int argc, char *argv[] )
     char * operation = NULL;
     char * hostA = NULL;
     char * hostB = NULL;
-
     int c = 0;
 
     if (argc < 2) {
@@ -146,6 +145,7 @@ main ( int argc, char *argv[] )
                 abort();
         }
     }
+    
 
     /* Check options consistency */
     if(operation == NULL) { 
@@ -156,11 +156,7 @@ main ( int argc, char *argv[] )
         exit(EXIT_FAILURE);
     } 
     
-    /* Store our own ip address */
-    if(get_ip_address(interface,&ip) == -1) {
-        fprintf(stderr,"Could not get IP address.Abort.\n");
-        exit(EXIT_FAILURE);
-    }
+    
     
     /* Store our own mac address */
     if (get_mac_address(interface,&mac) == -1) {
@@ -168,6 +164,12 @@ main ( int argc, char *argv[] )
         exit(EXIT_FAILURE);
     }
 
+
+    /* Store our own ip address */
+    if(get_ip_address(interface,&ip) == -1) {
+        fprintf(stderr,"Could not get IP address.Abort.\n");
+        exit(EXIT_FAILURE);
+    }
     /* set up pcap */
     init_pcap(interface,"arp"); 
 

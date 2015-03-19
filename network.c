@@ -52,9 +52,9 @@ get_ifreq ( const char * interface )
     struct ifreq ifr;
     size_t if_len;
 
-
+    memset(ifr.ifr_name,0x00,IFNAMSIZ);
     if_len = strlen(interface);
-    if (if_len >= sizeof(ifr.ifr_name)){
+    if (if_len >= IFNAMSIZ){
         fprintf(stderr,"Interface name too long to open descriptor.\nAbort.");
         exit(EXIT_FAILURE);
     }
@@ -109,6 +109,24 @@ get_ip_address ( const char * interface,struct in_addr * addr)
     return 0;
 }		/* -----  end of function ip_address  ----- */
 
+/*
+ * * Returns the mac address of the interface
+ * * */
+int
+get_mac_addr (const char * interface,unsigned char mac[6] )
+{
+    int fd ;
+    struct ifreq ifr = get_ifreq(interface);
+    fd = get_socketudp();
+    if(ioctl(fd,SIOCGIFHWADDR,&ifr) == -1) {
+        close(fd);
+        fprintf(stderr,"Error while operating IOCTL (MAC resolving).\nAbort.");
+        return -1;
+    }
+    close(fd);
+    memcpy(mac,ifr.ifr_hwaddr.sa_data,6);
+    return 0;
+} /* ----- end of function mac_address ----- */
 
 /*
  * Copy the mac address of the interface into the buffer chMAC

@@ -26,7 +26,15 @@
 #define SNAP_LEN 1518
 #define MAX_PKT_NUMBER 5
 
+/* the main structure used by pcap */
 static pcap_t * handle;
+/* used to filter the incoming packets by pcap */
+struct bpf_program bpf;
+
+Packet_analyzer arp_analyzer = NULL;
+Packet_analyzer ip_analyzer = NULL;
+
+int initialized = 0;
 static int packet_count = 0;
 /**
  * Send a raw array of bytes
@@ -40,46 +48,70 @@ int pcap_send_packet(const u_char * bytes,int size) {
     return 0;
 }
 
+
+
+/* 
+ * ===  FUNCTION  ======================================================================
+ *         Name:  pcap_set_arp_analyzer
+ *  Description:  Simply sets the arp pointer function right
+ *  so that function receives the packets when sniffing later.
+ * =====================================================================================
+ */
+    void
+pcap_set_arp_analyzer ( Packet_analyzer arp )
+{
+    arp_analyzer = arp;
+    return ;
+}		/* -----  end of function pcap_set_arp_analyzer  ----- */
+
+
+    void
+pcap_set_ip_analyzer ( Packet_analyzer ip )
+{
+    ip_analyzer = ip;
+    return ;
+}		/* -----  end of function pcap_set_ip_analyzer  ----- */
+
 /**
  * Main loop function that receives packets
  * */
-//void sniff_callback(u_char * user, const struct  pcap_pkthdr * h,const u_char * bytes) {
-//    int i = 0;
-//    printf("Received packet number %d ==> %d bytes\n",packet_count++,h->len);
-//    const struct pkt_eth * eth;
-//    unsigned short eth_type;
-//
-//    unsigned int captureLength = h->caplen;
-//    unsigned int packetLength = h->len;
-//
-//    if(captureLength != packetLength) {
-//        fprintf(stderr,"Error : received packet with %d available instead of %d \n",captureLength,packetLength);
-//        return;
-//    }
-//    if(captureLength < ETH_SIZE) {
-//        fprintf(stderr,"Error : received too small packet , %d bytes",captureLength);
-//        return;
-//    }
-//
-//    eth = (struct pkt_eth*)(bytes);
-//
-//    // print the packet
-//    print_pkt_eth(eth);
-//
-//    eth_type = ntohs(eth->type);
-//
-//    if(eth_type == ETHERTYPE_ARP) {
-//        handle_arp(bytes);
-//    } else if (eth_type == ETHERTYPE_IP) {
-//        handle_ip(bytes);
-//    }
-//    
-//    printf("\n");for(i=0; i < 25; i++) { printf("-"); }; printf("\n\n");
-//
-//    return;
-//   
-//}
-//
+void sniff_callback(u_char * user, const struct  pcap_pkthdr * h,const u_char * bytes) {
+    int i = 0;
+    printf("Received packet number %d ==> %d bytes\n",packet_count++,h->len);
+    const struct pkt_eth * eth;
+    unsigned short eth_type;
+
+    unsigned int captureLength = h->caplen;
+    unsigned int packetLength = h->len;
+
+    if(captureLength != packetLength) {
+        fprintf(stderr,"Error : received packet with %d available instead of %d \n",captureLength,packetLength);
+        return;
+    }
+    if(captureLength < ETH_SIZE) {
+        fprintf(stderr,"Error : received too small packet , %d bytes",captureLength);
+        return;
+    }
+
+    eth = (struct pkt_eth*)(bytes);
+
+    // print the packet
+    print_packet(bytes);
+
+    eth_type = ntohs(eth->type);
+
+    if(eth_type == ETHERTYPE_ARP && arp_analyzer != NULL) {
+       arp_analyzer(bytes,h->len); 
+    } else if (eth_type == ETHERTYPE_IP && ip_analyzer != NULL) {
+        ip_analyzer(bytes,h->len);
+    }
+    
+    //printf("\n");for(i=0; i < 25; i++) { printf("-"); }; printf("\n\n");
+
+    return;
+   
+}
+
 /* returns 0 if everything went well */
 int set_options(pcap_t * handle) {
 	int ret = 0;
@@ -103,7 +135,7 @@ int set_options(pcap_t * handle) {
 		fprintf(stderr,"Error setting timeout\n");
 		return ret;
 	}
-    printf(", timeout \n");
+    printf(", timeout ");
     
 	return ret;
 }
@@ -131,17 +163,17 @@ int activate(pcap_t * handle) {
 }
 
 /* Will activate device , filter & call the sniffing loop */
-int init_pcap(char * interface, char * filter) {
-
+/* Return 0 on success otherwise exit application */
+int pcap_init(char * interface, char * filter) {
+    
     char err[PCAP_ERRBUF_SIZE]; //error buffer
 
-    struct bpf_program bpf;
     bpf_u_int32 mask; // network mask 
     bpf_u_int32 ip; // network ip
     struct in_addr addr; // network number
 
     int ret;
-
+    if(initialized) return;
     /* get mask & ip */
     if(pcap_lookupnet(interface, &ip, &mask, err) == -1) {
         fprintf(stderr, "Couldn't get netmask for device %s: %s\n",interface,err);
@@ -173,8 +205,8 @@ int init_pcap(char * interface, char * filter) {
             exit(EXIT_FAILURE);
         }
     }
-
-    return EXIT_SUCCESS;
+    initialized = 1;
+    return 0;
 }
 
 
@@ -188,8 +220,8 @@ int init_pcap(char * interface, char * filter) {
     void
 pcap_exit_ (void )
 {
-    //pcap_breakloop(handle);
-    //pcap_freecode(&bpf);
+    pcap_breakloop(handle);
+    pcap_freecode(&bpf);
     pcap_close(handle);
     return ;
 }		/* -----  end of function pcap_close  ----- */
@@ -199,15 +231,13 @@ pcap_exit_ (void )
  *  Description:  simply a wrapper around the sniffing method of pcap
  * =====================================================================================
  */
-//    void
-//pcap_sniff ( int packet_count )
-//{
-//    printf("Sniffing starting on %s ...\n",interface);
-//    pcap_loop(handle,packet_count,sniff_callback,NULL);
-//    return ;
-//}		/* -----  end of function pcap_sniff  ----- */
-//
-//void handle_ip(const u_char * bytes) {
-//    const struct pkt_ip * ip = (const struct pkt_ip *) (bytes + ETH_SIZE);
-//    print_pkt_ip(ip);
-//}
+    void
+pcap_sniff ( int packet_count )
+{
+    printf("Sniffing started ...");
+    pcap_loop(handle,packet_count,sniff_callback,NULL);
+    printf(" Ok ;)");
+    fflush(stdout);
+    return ;
+}		/* -----  end of function pcap_sniff  ----- */
+

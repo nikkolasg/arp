@@ -24,14 +24,25 @@
 #define REQUEST 1
 #define REPLY 0
 
+//#define ether_broad ({ 0xff,0xff,0xff,0xff,0xff,0xff })
+//#define ether_null ({ 0x00,0x00,0x00,0x00,0x00,0x00 })
+//#define ip_broad ({ 0xffffffff })
+//#define ip_null ({ 0x00000000 })
+//
+
+int arp_resolve_mac ( struct Host * host );
+void arp_analyzer_resolv(const Packet * packet,size_t size  );
+void nullify_ip(IP *ip);
+void nullify_mac(MAC * mac);
+
 /*-----------------------------------------------------------------------------
  *  Injection pArt
  *-----------------------------------------------------------------------------*/
 
 Packet * arp_packet(int opcode);
-void arp_set_ethernet_frame(Packet * pkt,MAC * src, MAC * dst);
-void arp_set_hard_addr(Packet * pkt, MAC * src,MAC * dst);
-void arp_set_proto_addr(Packet * pkt, IP * src, IP * dst);
+void arp_set_ethernet_frame(Packet * pkt,const MAC * src,const MAC * dst);
+void arp_set_hard_addr(Packet * pkt,const MAC * src,const MAC * dst);
+void arp_set_proto_addr(Packet * pkt, const IP * src,const IP * dst);
 
 /*-----------------------------------------------------------------------------
  *  SNIFFING PART

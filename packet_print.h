@@ -23,5 +23,5 @@ void print_pkt_eth(const pkt_eth * eth);
 void print_pkt_arp(const pkt_arp * arp);
 void print_pkt_ip(const pkt_ip * ip);
 void print_mac_addr(const u_char * bytes);
-
+void print_packet(const Packet * packet);
 #endif

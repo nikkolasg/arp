@@ -30,10 +30,6 @@
 
 #define BROADCAST_MAC "ff:ff:ff:ff:ff:ff"
 #define NULL_MAC "00:00:00:00:00:00"
-#define ETHER_ATON(X) ((void *) ether_aton(X))
-#define ETHER_NTOA(X) (ether_ntoa(X))
-#define INET_ATON(X)  ((void *)inet_aton(X))
-#define INET_NTOA(X)  (inet_ntoa(X))
 
 int get_socketudp(void);
 struct ifreq get_ifreq(const char * interface);

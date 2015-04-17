@@ -24,11 +24,7 @@
 #define REQUEST 1
 #define REPLY 0
 
-//#define ether_broad ({ 0xff,0xff,0xff,0xff,0xff,0xff })
-//#define ether_null ({ 0x00,0x00,0x00,0x00,0x00,0x00 })
-//#define ip_broad ({ 0xffffffff })
-//#define ip_null ({ 0x00000000 })
-//
+#define RESOLV_RETRY 3
 
 int arp_resolve_mac ( struct Host * host );
 void arp_analyzer_resolv(const Packet * packet,size_t size  );

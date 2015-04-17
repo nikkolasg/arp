@@ -96,7 +96,7 @@ void sniff_callback(u_char * user, const struct  pcap_pkthdr * h,const u_char * 
     eth = (struct pkt_eth*)(bytes);
 
     // print the packet
-    print_packet(bytes);
+//    print_packet(bytes);
 
     eth_type = ntohs(eth->type);
 

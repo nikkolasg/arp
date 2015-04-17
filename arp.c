@@ -37,8 +37,8 @@ const MAC  null_mac = { 0x00,0x00,0x00,0x00,0x00,0x00 };
 const IP broadcast_ip = { 0xffffffff };
 const IP null_ip = { 0x00000000 };
 const struct Host null_host = {{ 0x00000000 },
-                             { 0x00,0x00,0x00,0x00,0x00,0x00 }};
-                               
+    { 0x00,0x00,0x00,0x00,0x00,0x00 }};
+
 /* Empty mac address which can be used as a temp variable */
 /* ether_null & ip_null defined as macro in arp.h
  * so we can instantiate with null default values */
@@ -60,6 +60,7 @@ int arp_success = 0;
     int
 arp_resolve_mac ( struct Host * host )
 {
+    int retry = 0;
     struct pkt_arp * arp;
     struct pkt_eth * eth;
     /*Create the request packet */
@@ -70,8 +71,8 @@ arp_resolve_mac ( struct Host * host )
     copy_mac(&eth->dest,&broadcast_mac);
     copy_mac(&eth->src,&mac);
     //arp_set_ethernet_frame(request,&mac,&broadcast_mac);
-    
-     /* arp request => mac dest address set to null */
+
+    /* arp request => mac dest address set to null */
     //arp_set_hard_addr(request,&mac,&null_mac);
     //memcpy(&arp->hard_addr_send,&mac,ETH_ADDR_SIZE);
     //arp->hard_addr_dest = null_mac;
@@ -94,21 +95,34 @@ arp_resolve_mac ( struct Host * host )
     /* Sets the tmp ip variable so we will know if it the right
      * response we get or a response coming from another source */
     tmp_ip = host->ip;
-    /* sends the packet */
-    if(pcap_send_packet(request,ARP_PACKET_SIZE) == -1) {
-        fprintf(stderr,"Error while sending ARP request packet.\n");
-        return -1;
+    
+    /* Will try to resolv. Sometimes, we receive another ARP
+     * packet coming from the network instead of the reply we want,
+     * so better try a few times instead of just leaving */
+    while(retry < RESOLV_RETRY) { 
+       
+        /* sends the packet */
+        if(pcap_send_packet(request,ARP_PACKET_SIZE) == -1) {
+            fprintf(stderr,"Error while sending ARP request packet.\n");
+            return -1;
+        }
+       
+        /* Sniff a packet, hopefully it will be our response */ 
+        pcap_sniff(1);
+       
+        /* Test if we have found the right MAC 
+         * i.e. if our tmp var is not null */ 
+        if(cmp_mac(&tmp_mac,&null_mac) == 0) {
+            fprintf(stderr,"ARP Resolve did not find MAC associated with %s.\n",inet_ntoa(ip));
+            fflush(stderr); 
+            retry++;
+        } else {
+            retry = RESOLV_RETRY + 1;
+        }
     }
-    printf("ARP Request packet sent...\n"); 
-    /* Sniff a packet, hopefully it will be our response */ 
-    pcap_sniff(1);
-    /* Test if we have found the right MAC 
-     * i.e. if our tmp var is not null */ 
-    if(cmp_mac(&tmp_mac,&null_mac) == 0) {
-        fprintf(stderr,"ARP Resolve did not find MAC associated with %s.\n",inet_ntoa(ip));
-        fflush(stderr); 
-        return -1;
-    }
+
+    /* leave if not found */
+    if(retry == RESOLV_RETRY) return -1;
 
     /* cpy into the receptor */
     copy_mac(&host->mac,&tmp_mac);
@@ -116,6 +130,7 @@ arp_resolve_mac ( struct Host * host )
     nullify_ip(&tmp_ip);
     nullify_mac(&tmp_mac);
     free(request);
+    
     return 1;
 }		/* -----  end of function arp_resolve_MAC  ----- */
 
@@ -240,15 +255,15 @@ arp_set_proto_addr (Packet * pkt,const IP * src,const IP * dst)
     arp->proto_addr_dest = *dst;
     //memcpy(&arp->proto_addr_send,src,IP_ADDR_SIZE);
     //memcpy(&arp->proto_addr_dest,dst,IP_ADDR_SIZE);
-   // printf("arp ip  frame => %s ",inet_ntoa(*src));
-   // printf("|| %s\n",inet_ntoa(*dst));
+    // printf("arp ip  frame => %s ",inet_ntoa(*src));
+    // printf("|| %s\n",inet_ntoa(*dst));
 }		/* -----  end of function arp_set_proto_addr  ----- */
 
 
-    /*-----------------------------------------------------------------------------
-     *  SNIFFING PART : ability to detect arp packet
-     *  if they are gratuituous, or to the wanted destination etc etc
-     *-----------------------------------------------------------------------------*/
+/*-----------------------------------------------------------------------------
+ *  SNIFFING PART : ability to detect arp packet
+ *  if they are gratuituous, or to the wanted destination etc etc
+ *-----------------------------------------------------------------------------*/
 //    void
 //handle_arp (const Packet * packet )
 //{

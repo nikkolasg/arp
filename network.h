@@ -19,10 +19,37 @@
 #ifndef NETWORK_
 #define NETWORK_
 
-int get_socketudp();
+#include <sys/socket.h>
+#include <net/if.h>
+#include <linux/rtnetlink.h>
+
+#include <unistd.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <netinet/ether.h>
+
+#define BROADCAST_MAC "ff:ff:ff:ff:ff:ff"
+#define NULL_MAC "00:00:00:00:00:00"
+
+int get_socketudp(void);
 struct ifreq get_ifreq(const char * interface);
-int get_mac_address(const char * interface,unsigned char mac[6]);
-struct in_addr get_ip_address(const char * interface);
-int get_mac_addr(char * interface,unsigned char mac[6]);
+int get_mac_address(const char * interface,struct ether_addr * ether);
+int get_mac_addr(const char * interface, unsigned char mac[6]);
+int get_mac_address_old(char * interface,unsigned char mac[6]);
+int get_ip_address(const char * interface,struct in_addr * addr);
+void print_ioctl_error(void);
+
+/* Code from internet. See implementation for details */
+struct route_info
+{
+    struct in_addr dstAddr;
+    struct in_addr srcAddr;
+    struct in_addr gateWay;
+    char ifName[IF_NAMESIZE];
+};
+
+int readNlSock(int sockFd, char *bufPtr, size_t buf_size, unsigned int seqNum, unsigned int pId);
+int parseRoutes(struct nlmsghdr *nlHdr, struct route_info *rtInfo);
+int get_gatewayip(char gatewayip[INET_ADDRSTRLEN]);
 
 #endif

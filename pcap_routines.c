@@ -26,31 +26,51 @@
 #define SNAP_LEN 1518
 #define MAX_PKT_NUMBER 5
 
+/* the main structure used by pcap */
 static pcap_t * handle;
-static packet_count = 0;
-/*
- * signal handler for nicely release the pcap handle
- * */
-void ctrl_c()
-{
-    printf("Exiting application...\n");
-    pcap_breakloop(handle);
-    pcap_close(handle);
-    exit(EXIT_SUCCESS);
-}
+/* used to filter the incoming packets by pcap */
+struct bpf_program bpf;
+
+Packet_analyzer arp_analyzer = NULL;
+Packet_analyzer ip_analyzer = NULL;
+
+int initialized = 0;
+static int packet_count = 0;
 /**
  * Send a raw array of bytes
  * return 0 in success, -1 in failure
  * */
-int send_packet(const u_char * bytes,int size) {
+int pcap_send_packet(const u_char * bytes,int size) {
     if(pcap_inject(handle,bytes,size) != size) {
-        fprintf(stderr,"ARP Poison packet could not be sent.Abort.\n");
+        fprintf(stderr,"Packet could not be sent.\n");
         return -1;
-        //ctrl_c();
     } 
-    printf("ARP Poison Packet sent.\n");
     return 0;
 }
+
+
+
+/* 
+ * ===  FUNCTION  ======================================================================
+ *         Name:  pcap_set_arp_analyzer
+ *  Description:  Simply sets the arp pointer function right
+ *  so that function receives the packets when sniffing later.
+ * =====================================================================================
+ */
+    void
+pcap_set_arp_analyzer ( Packet_analyzer arp )
+{
+    arp_analyzer = arp;
+    return ;
+}		/* -----  end of function pcap_set_arp_analyzer  ----- */
+
+
+    void
+pcap_set_ip_analyzer ( Packet_analyzer ip )
+{
+    ip_analyzer = ip;
+    return ;
+}		/* -----  end of function pcap_set_ip_analyzer  ----- */
 
 /**
  * Main loop function that receives packets
@@ -76,17 +96,17 @@ void sniff_callback(u_char * user, const struct  pcap_pkthdr * h,const u_char * 
     eth = (struct pkt_eth*)(bytes);
 
     // print the packet
-    print_pkt_eth(eth);
+//    print_packet(bytes);
 
     eth_type = ntohs(eth->type);
 
-    if(eth_type == ETHERTYPE_ARP) {
-        handle_arp(h,bytes);
-    } else if (eth_type == ETHERTYPE_IP) {
-        handle_ip(h,bytes);
+    if(eth_type == ETHERTYPE_ARP && arp_analyzer != NULL) {
+       arp_analyzer(bytes,h->len); 
+    } else if (eth_type == ETHERTYPE_IP && ip_analyzer != NULL) {
+        ip_analyzer(bytes,h->len);
     }
     
-    printf("\n");for(i=0; i < 25; i++) { printf("-"); }; printf("\n\n");
+    //printf("\n");for(i=0; i < 25; i++) { printf("-"); }; printf("\n\n");
 
     return;
    
@@ -115,7 +135,7 @@ int set_options(pcap_t * handle) {
 		fprintf(stderr,"Error setting timeout\n");
 		return ret;
 	}
-    printf(", timeout \n");
+    printf(", timeout ");
     
 	return ret;
 }
@@ -143,17 +163,17 @@ int activate(pcap_t * handle) {
 }
 
 /* Will activate device , filter & call the sniffing loop */
-int sniffing_method(char * interface, char * filter,int packet_count) {
-
+/* Return 0 on success otherwise exit application */
+int pcap_init(char * interface, char * filter) {
+    
     char err[PCAP_ERRBUF_SIZE]; //error buffer
 
-    struct bpf_program bpf;
     bpf_u_int32 mask; // network mask 
     bpf_u_int32 ip; // network ip
     struct in_addr addr; // network number
 
     int ret;
-
+    if(initialized) return;
     /* get mask & ip */
     if(pcap_lookupnet(interface, &ip, &mask, err) == -1) {
         fprintf(stderr, "Couldn't get netmask for device %s: %s\n",interface,err);
@@ -185,20 +205,39 @@ int sniffing_method(char * interface, char * filter,int packet_count) {
             exit(EXIT_FAILURE);
         }
     }
+    initialized = 1;
+    return 0;
+}
 
-    signal(SIGINT,ctrl_c);
-    
-    /* SNIFF starts */
-    printf("Sniffing starting on %s ...\n",interface);
-    pcap_loop(handle,packet_count,sniff_callback,NULL);
 
+/* 
+ * ===  FUNCTION  ======================================================================
+ *         Name:  pcap_exit
+ *  Description:  free up the memory
+ * =====================================================================================
+ */
+
+    void
+pcap_exit_ (void )
+{
+    pcap_breakloop(handle);
     pcap_freecode(&bpf);
     pcap_close(handle);
+    return ;
+}		/* -----  end of function pcap_close  ----- */
+/* 
+ * ===  FUNCTION  ======================================================================
+ *         Name:  pcap_sniff
+ *  Description:  simply a wrapper around the sniffing method of pcap
+ * =====================================================================================
+ */
+    void
+pcap_sniff ( int packet_count )
+{
+    printf("Sniffing started ...");
+    pcap_loop(handle,packet_count,sniff_callback,NULL);
+    printf(" Ok ;)");
+    fflush(stdout);
+    return ;
+}		/* -----  end of function pcap_sniff  ----- */
 
-    return EXIT_SUCCESS;
-}
-
-void handle_ip(const struct pcap_pkthdr *h,const u_char * bytes) {
-    const struct pkt_ip * ip = (const struct pkt_ip *) (bytes + ETH_SIZE);
-    print_pkt_ip(ip);
-}

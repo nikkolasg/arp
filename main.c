@@ -4,7 +4,6 @@
 #include <netinet/in.h> // for addresses translation
 #include <errno.h>
 #include <signal.h> // for signal control handling in posix env
-// for ntohs etc
 // can also be necessary to include netinet/in
 #include <arpa/inet.h>
 #include <unistd.h> // options parsing

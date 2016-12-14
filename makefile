@@ -1,4 +1,7 @@
+CC=clang
+CFLAGS=-g -Wextra -Wmissing-prototypes -Wstrict-prototypes -lpcap
+
 all:
-	gcc -g -Wextra -Wmissing-prototypes -Wstrict-prototypes -lpcap main.c  arp.c packet_print.c pcap_routines.c network.c packet_struct.c -o parp
+	$(CC) $(CFLAGS) main.c  arp.c packet_print.c pcap_routines.c network.c packet_struct.c -o parp
 
 

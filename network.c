@@ -31,8 +31,6 @@
 #include "network.h"
 
 
-
-
 /*
  * Return a UDP socket 
  * */

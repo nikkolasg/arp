@@ -8,10 +8,8 @@
 #define ETH_SIZE 14
 #define ARP_SIZE 28
 #define ARP_PACKET_SIZE (ETH_SIZE+ARP_SIZE)
-/* in bytes */
 #define ETH_ADDR_SIZE 6
 #define IP_ADDR_SIZE 4
-
 
 typedef u_char Packet;
 typedef struct in_addr IP;

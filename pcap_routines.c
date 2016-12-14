@@ -34,8 +34,9 @@ struct bpf_program bpf;
 Packet_analyzer arp_analyzer = NULL;
 Packet_analyzer ip_analyzer = NULL;
 
-int initialized = 0;
+extern int initialized = 0;
 static int packet_count = 0;
+
 /**
  * Send a raw array of bytes
  * return 0 in success, -1 in failure

@@ -4,7 +4,6 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-
 #include "packet_struct.h"
 #include "packet_print.h"
 

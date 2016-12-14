@@ -30,7 +30,6 @@ typedef struct in_addr IP;
 #define TO_CHAR(X) (  ether_ntoa(X))
 #define TO_ETHER(X) ( (void *) ether_aton(X))
 
-
 struct Host {
     IP ip;
     MAC mac;

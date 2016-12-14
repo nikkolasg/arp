@@ -1,10 +1,8 @@
 sniff
 parp
-=======
 *.o
 tags
 arp.config
 arp.creator
 arp.files
 arp.includes
->>>>>>> mitm

@@ -24,7 +24,6 @@
 /* Function pointer to set to receive ARP packets */
 typedef void (*Packet_analyzer) (const u_char * packet,size_t size);
 
-
 void pcap_exit_(void); //signal handler SIGINT
 void sniff_callback(u_char * user, const struct  pcap_pkthdr * h,const u_char * bytes) ;
 
